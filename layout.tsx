@@ -3,6 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'งานประจำวัน · The Second',
+  appleWebApp: { capable: true, title: 'งานร้าน', statusBarStyle: 'default' },
   description: 'ระบบหน้าที่ประจำวันของพนักงาน The Second Hatyai',
 };
 

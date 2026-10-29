@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { SESSION_COOKIE, SESSION_DAYS, getCookie, makeSession, readSession } from './session';
 
 export type LineUser = { userId: string; displayName: string };
+export type Auth = { user: LineUser; fresh: boolean };
 
 /** ตรวจ ID token จาก LIFF กับเซิร์ฟเวอร์ LINE เพื่อให้รู้แน่ว่าใครส่งมา (ปลอมไม่ได้) */
 export async function verifyIdToken(idToken: string): Promise<LineUser | null> {
@@ -20,6 +22,31 @@ export async function verifyIdToken(idToken: string): Promise<LineUser | null> {
   if (!res.ok) return null;
   const j = await res.json();
   return { userId: j.sub, displayName: j.name || '' };
+}
+
+/** ใช้ ID token ถ้าส่งมา (แล้วออกคุกกี้ใหม่) ไม่งั้นใช้คุกกี้ที่จำไว้ */
+export async function authenticate(req: Request, idToken?: string): Promise<Auth | null> {
+  if (idToken) {
+    const user = await verifyIdToken(idToken);
+    if (user) return { user, fresh: true };
+  }
+  const userId = readSession(getCookie(req, SESSION_COOKIE));
+  return userId ? { user: { userId, displayName: '' }, fresh: false } : null;
+}
+
+/** ตอบ JSON และต่ออายุคุกกี้เมื่อเพิ่งล็อกอิน */
+export function respond(auth: Auth, body: unknown, status = 200) {
+  const res = NextResponse.json(body, { status });
+  if (auth.fresh) {
+    res.cookies.set(SESSION_COOKIE, makeSession(auth.user.userId), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_DAYS * 86400,
+    });
+  }
+  return res;
 }
 
 export function adminIds(): string[] {

@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'งานประจำวัน · The Second',
     short_name: 'งานร้าน',
     start_url: '/',
-    display: 'standalone',
+    display: 'browser',
     background_color: '#fbede0',
     theme_color: '#7a2531',
     icons: [
